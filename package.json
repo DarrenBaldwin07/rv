@@ -1,0 +1,27 @@
+{
+	"name": "rv",
+	"module": "src/index.ts",
+	"bin": {
+		"rv": "./src/index.ts"
+	},
+	"type": "module",
+	"files": [
+		"src",
+		"tsconfig.json",
+		"README.md"
+	],
+	"scripts": {
+		"pretty": "prettier --write \"./**/*.{ts,tsx,json}\" --config ./.prettierrc.json"
+	},
+	"private": true,
+	"devDependencies": {
+		"@types/bun": "latest",
+		"prettier": "^3.5.3"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"commander": "^14.0.2"
+	}
+}
