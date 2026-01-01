@@ -1,1 +1,3 @@
-console.log("Hello via Bun!");
+#!/usr/bin/env bun
+
+console.log('Hello via Bun!');
