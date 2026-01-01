@@ -1,9 +1,6 @@
 import { Command } from 'commander';
-import {
-	setGithubToken,
-	getGithubToken,
-	clearGithubToken,
-} from '../../config.js';
+import { setGithubToken, getGithubToken, clearGithubToken } from '../../config';
+import { validateToken } from './utils';
 
 export const authCommand = new Command('auth').description(
 	'GitHub authentication commands'
@@ -15,10 +12,19 @@ authCommand
 	.requiredOption('-t, --token <token>', 'Personal access token')
 	.action(async function (options) {
 		try {
+			console.log('Validating token...');
+			const user = await validateToken(options.token);
+
 			await setGithubToken(options.token);
-			console.log('✓ GitHub token saved successfully');
+			console.log(
+				`✓ Authenticated as ${user.login}${user.name ? ` (${user.name})` : ''}`
+			);
 		} catch (error) {
-			console.error('Failed to save token:', error);
+			if (error instanceof Error && error.message.includes('Bad credentials')) {
+				console.error('✗ Invalid token');
+			} else {
+				console.error('✗ Failed to authenticate:', error);
+			}
 			process.exit(1);
 		}
 	});
@@ -43,13 +49,20 @@ authCommand
 		try {
 			const token = await getGithubToken();
 			if (token) {
-				const masked = token.slice(0, 4) + '...' + token.slice(-4);
-				console.log(`✓ Authenticated with GitHub (token: ${masked})`);
+				const user = await validateToken(token);
+				console.log(
+					`✓ Authenticated as ${user.login}${
+						user.name ? ` (${user.name})` : ''
+					}`
+				);
 			} else {
 				console.log('✗ Not authenticated with GitHub');
 			}
 		} catch (error) {
-			console.error('Failed to check status:', error);
-			process.exit(1);
+			if (error instanceof Error && error.message.includes('Bad credentials')) {
+				console.log('✗ Stored token is invalid');
+			} else {
+				console.error('Failed to check status:', error);
+			}
 		}
 	});
