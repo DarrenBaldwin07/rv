@@ -1,4 +1,9 @@
 import { Command } from 'commander';
+import {
+	setGithubToken,
+	getGithubToken,
+	clearGithubToken,
+} from '../../config.js';
 
 export const authCommand = new Command('auth').description(
 	'GitHub authentication commands'
@@ -6,26 +11,45 @@ export const authCommand = new Command('auth').description(
 
 authCommand
 	.command('login')
-	.description('Authenticate with GitHub')
-	.option('-t, --token <token>', 'Use a personal access token')
-	.action(function (options) {
-		if (options.token) {
-			console.log('Authenticating with provided token...');
-		} else {
-			console.log('Starting GitHub OAuth flow...');
+	.description('Authenticate with GitHub using a personal access token')
+	.requiredOption('-t, --token <token>', 'Personal access token')
+	.action(async function (options) {
+		try {
+			await setGithubToken(options.token);
+			console.log('✓ GitHub token saved successfully');
+		} catch (error) {
+			console.error('Failed to save token:', error);
+			process.exit(1);
 		}
 	});
 
 authCommand
 	.command('logout')
-	.description('Log out from GitHub')
-	.action(function () {
-		console.log('Logging out from GitHub...');
+	.description('Remove stored GitHub credentials')
+	.action(async function () {
+		try {
+			await clearGithubToken();
+			console.log('✓ GitHub credentials removed');
+		} catch (error) {
+			console.error('Failed to remove credentials:', error);
+			process.exit(1);
+		}
 	});
 
 authCommand
 	.command('status')
 	.description('Check authentication status')
-	.action(function () {
-		console.log('Checking GitHub auth status...');
+	.action(async function () {
+		try {
+			const token = await getGithubToken();
+			if (token) {
+				const masked = token.slice(0, 4) + '...' + token.slice(-4);
+				console.log(`✓ Authenticated with GitHub (token: ${masked})`);
+			} else {
+				console.log('✗ Not authenticated with GitHub');
+			}
+		} catch (error) {
+			console.error('Failed to check status:', error);
+			process.exit(1);
+		}
 	});
