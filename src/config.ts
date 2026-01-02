@@ -4,6 +4,7 @@ import { join } from 'path';
 
 const ProviderConfigSchema = z.object({
 	token: z.string().optional(),
+	botUsername: z.string().optional(),
 });
 
 const ConfigSchema = z.object({
