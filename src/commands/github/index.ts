@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { authCommand } from './auth.js';
+import { authCommand } from './auth';
 
 export const githubCommand = new Command('github')
 	.alias('gh')
@@ -13,11 +13,4 @@ githubCommand
 	.option('-l, --limit <number>', 'Limit number of repos', '10')
 	.action(function (options) {
 		console.log(`Listing GitHub repos (limit: ${options.limit})`);
-	});
-
-githubCommand
-	.command('clone <repo>')
-	.description('Clone a GitHub repository')
-	.action(function (repo) {
-		console.log(`Cloning GitHub repo: ${repo}`);
 	});

@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 
 import { program } from 'commander';
-import { githubCommand } from './commands/github/index.js';
-import { gitlabCommand } from './commands/gitlab/index.js';
-import { bitbucketCommand } from './commands/bitbucket/index.js';
+import { githubCommand } from './commands/github/index';
+import { gitlabCommand } from './commands/gitlab/index';
+import { bitbucketCommand } from './commands/bitbucket/index';
 
 program
 	.name('rv')
