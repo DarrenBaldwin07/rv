@@ -1,4 +1,5 @@
 import { Octokit } from 'octokit';
+import { getGithubToken } from '../../config';
 
 export type GitHubUser = {
 	login: string;
@@ -15,4 +16,12 @@ export async function validateToken(token: string): Promise<GitHubUser> {
 		name: data.name,
 		id: data.id,
 	};
+}
+
+export async function octokit() {
+	const token = await getGithubToken();
+	if (!token) {
+		throw new Error('GitHub token not found');
+	}
+	return new Octokit({ auth: token });
 }
