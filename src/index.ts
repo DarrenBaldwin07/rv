@@ -4,6 +4,7 @@ import { program } from 'commander';
 import { githubCommand } from './commands/github/index';
 import { gitlabCommand } from './commands/gitlab/index';
 import { bitbucketCommand } from './commands/bitbucket/index';
+import { setupCommand } from './commands/setup';
 
 program
 	.name('rv')
@@ -13,5 +14,6 @@ program
 program.addCommand(githubCommand);
 program.addCommand(gitlabCommand);
 program.addCommand(bitbucketCommand);
+program.addCommand(setupCommand);
 
 program.parse();
