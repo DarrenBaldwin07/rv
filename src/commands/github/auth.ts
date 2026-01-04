@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { setGithubToken, getGithubToken, clearGithubToken } from '../../config';
-import { validateToken } from './utils';
+import { validateGithubToken } from '../../utils';
 
 export const authCommand = new Command('auth').description(
 	'GitHub authentication commands'
@@ -13,7 +13,7 @@ authCommand
 	.action(async function (options) {
 		try {
 			console.log('Validating token...');
-			const user = await validateToken(options.token);
+			const user = await validateGithubToken(options.token);
 
 			await setGithubToken(options.token);
 			console.log(
@@ -49,7 +49,7 @@ authCommand
 		try {
 			const token = await getGithubToken();
 			if (token) {
-				const user = await validateToken(token);
+				const user = await validateGithubToken(token);
 				console.log(
 					`✓ Authenticated as ${user.login}${
 						user.name ? ` (${user.name})` : ''

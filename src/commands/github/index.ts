@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import { authCommand } from './auth';
-import { octokit } from './utils';
-import { parsePullRequestUrl } from '../../utils';
+import { octokit, parsePullRequestUrl } from '../../utils';
 
 export const githubCommand = new Command('github')
 	.alias('gh')
@@ -26,7 +25,7 @@ githubCommand
 			repo: parsedUrl.name,
 			pull_number: parseInt(parsedUrl.pr_number),
 		});
-		console.log(reviewComments);
+		console.log(reviewComments.data);
 	});
 
 githubCommand
