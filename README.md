@@ -16,8 +16,10 @@ This project was created using `bun init` in bun v1.2.4. [Bun](https://bun.sh) i
 
 ## Features
 
+- single unified interface for reviewing pull requests via agents
 - fix non-determnistic with coding agents (double approvals of PRs, commenting the same thing twice, etc)
 - ability to add arbitrary postfix and prefix hard-coded content in PR comments (e.g "fix with @tembo", etc)
 - ability to authenticate more than one github integration at once and let the agent switch between them
 - ability to disable certain commands (e.g auto merge, etc)
-- unified interface to reviewing via different review apis between github, gitlab, and bitbucket
+- ability to get failing github action logs, maybe filtered to near the error
+- ability to get lint errors from github actions
