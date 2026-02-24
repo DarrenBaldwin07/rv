@@ -1,3 +1,15 @@
+import {
+	createClient,
+	createConfig,
+	listPullRequestComments,
+	getPullRequestComment,
+	createPullRequestComment,
+	deletePullRequestComment,
+	resolvePullRequestComment,
+	approvePullRequest,
+	requestPullRequestChanges,
+	updatePullRequest,
+} from '@tembo-io/bitbucket';
 import type {
 	Client,
 	Comment,
@@ -7,127 +19,168 @@ import type {
 import { parsePullRequestUrl } from '../utils';
 
 interface BitbucketOptions {
-	baseUrl?: string;
 	token: string;
 }
 
-async function bbFetch(
-	opts: BitbucketOptions,
-	path: string,
-	init?: RequestInit
-): Promise<Response> {
-	const base = opts.baseUrl ?? 'https://api.bitbucket.org/2.0';
-	const res = await fetch(`${base}${path}`, {
-		...init,
-		headers: {
-			Authorization: `Bearer ${opts.token}`,
-			'Content-Type': 'application/json',
-			...init?.headers,
-		},
-	});
-
-	if (!res.ok) {
-		throw new Error(`Bitbucket API error: ${res.status} ${res.statusText}`);
-	}
-
-	return res;
+function mapComment(c: any): Comment {
+	return {
+		id: String(c.id),
+		body: c.content?.raw ?? '',
+		author: c.user?.display_name ?? 'unknown',
+		createdAt: c.created_on ?? '',
+		updatedAt: c.updated_on ?? '',
+		isResolved: c.resolution ? true : undefined,
+	};
 }
 
 function createPullRequestClient(
-	opts: BitbucketOptions,
+	bbClient: ReturnType<typeof createClient>,
 	ctx: RepoContext,
 	prId: number
 ): PullRequestClient {
-	const basePath = `/repositories/${ctx.owner}/${ctx.repo}/pullrequests/${prId}`;
+	const path = {
+		workspace: ctx.owner,
+		repo_slug: ctx.repo,
+		pull_request_id: prId,
+	};
 
 	return {
 		async getComments() {
-			const res = await bbFetch(opts, `${basePath}/comments`);
-			const data = await res.json();
-
-			return (data.values ?? []).map(function (c: any): Comment {
-				return {
-					id: String(c.id),
-					body: c.content?.raw ?? '',
-					author: c.user?.display_name ?? 'unknown',
-					createdAt: c.created_on ?? '',
-					updatedAt: c.updated_on ?? '',
-					isResolved: c.resolution?.type === 'resolved' ? true : undefined,
-				};
+			const { data, error } = await listPullRequestComments({
+				client: bbClient,
+				path,
 			});
+
+			if (error) {
+				throw new Error(`Failed to get comments: ${JSON.stringify(error)}`);
+			}
+
+			return (data?.values ?? []).map(mapComment);
 		},
 
 		async getComment(commentId: string) {
-			const res = await bbFetch(
-				opts,
-				`${basePath}/comments/${commentId}`
-			);
-			const c = await res.json();
+			const { data, error } = await getPullRequestComment({
+				client: bbClient,
+				path: { ...path, comment_id: parseInt(commentId) },
+			});
 
-			return {
-				id: String(c.id),
-				body: c.content?.raw ?? '',
-				author: c.user?.display_name ?? 'unknown',
-				createdAt: c.created_on ?? '',
-				updatedAt: c.updated_on ?? '',
-				isResolved: c.resolution?.type === 'resolved' ? true : undefined,
-			};
+			if (error) {
+				throw new Error(`Failed to get comment: ${JSON.stringify(error)}`);
+			}
+
+			return mapComment(data);
 		},
 
 		async addComment(body: string) {
-			const res = await bbFetch(opts, `${basePath}/comments`, {
-				method: 'POST',
-				body: JSON.stringify({ content: { raw: body } }),
+			const { data, error } = await createPullRequestComment({
+				client: bbClient,
+				path,
+				body: { content: { raw: body } } as any,
 			});
-			const c = await res.json();
 
-			return {
-				id: String(c.id),
-				body: c.content?.raw ?? '',
-				author: c.user?.display_name ?? 'unknown',
-				createdAt: c.created_on ?? '',
-				updatedAt: c.updated_on ?? '',
-			};
+			if (error) {
+				throw new Error(`Failed to add comment: ${JSON.stringify(error)}`);
+			}
+
+			return mapComment(data);
 		},
 
 		async deleteComment(commentId: string) {
-			await bbFetch(opts, `${basePath}/comments/${commentId}`, {
-				method: 'DELETE',
+			const { error } = await deletePullRequestComment({
+				client: bbClient,
+				path: { ...path, comment_id: parseInt(commentId) },
 			});
+
+			if (error) {
+				throw new Error(
+					`Failed to delete comment: ${JSON.stringify(error)}`
+				);
+			}
 		},
 
 		async resolveComment(commentId: string) {
-			await bbFetch(opts, `${basePath}/comments/${commentId}/resolve`, {
-				method: 'PUT',
+			const { error } = await resolvePullRequestComment({
+				client: bbClient,
+				path: { ...path, comment_id: parseInt(commentId) },
 			});
+
+			if (error) {
+				throw new Error(
+					`Failed to resolve comment: ${JSON.stringify(error)}`
+				);
+			}
 		},
 
 		async submitReview(review) {
 			if (review.action === 'approve') {
-				await bbFetch(opts, `${basePath}/approve`, { method: 'POST' });
-			} else if (review.action === 'request_changes') {
-				await bbFetch(opts, `${basePath}/request-changes`, {
-					method: 'POST',
+				const { error } = await approvePullRequest({
+					client: bbClient,
+					path,
 				});
+				if (error) {
+					throw new Error(
+						`Failed to approve: ${JSON.stringify(error)}`
+					);
+				}
+			} else if (review.action === 'request_changes') {
+				const { error } = await requestPullRequestChanges({
+					client: bbClient,
+					path,
+				});
+				if (error) {
+					throw new Error(
+						`Failed to request changes: ${JSON.stringify(error)}`
+					);
+				}
 			}
 
 			if (review.body) {
-				await bbFetch(opts, `${basePath}/comments`, {
-					method: 'POST',
-					body: JSON.stringify({ content: { raw: review.body } }),
+				await createPullRequestComment({
+					client: bbClient,
+					path,
+					body: { content: { raw: review.body } } as any,
 				});
 			}
 
 			if (review.comments) {
 				for (const c of review.comments) {
-					await bbFetch(opts, `${basePath}/comments`, {
-						method: 'POST',
-						body: JSON.stringify({
+					await createPullRequestComment({
+						client: bbClient,
+						path,
+						body: {
 							content: { raw: c.body },
 							inline: { path: c.path, to: c.line },
-						}),
+						} as any,
 					});
 				}
+			}
+		},
+
+		async updateTitle(title: string) {
+			const { error } = await updatePullRequest({
+				client: bbClient,
+				path,
+				body: { title } as any,
+			});
+
+			if (error) {
+				throw new Error(
+					`Failed to update title: ${JSON.stringify(error)}`
+				);
+			}
+		},
+
+		async updateDescription(description: string) {
+			const { error } = await updatePullRequest({
+				client: bbClient,
+				path,
+				body: { summary: { raw: description } } as any,
+			});
+
+			if (error) {
+				throw new Error(
+					`Failed to update description: ${JSON.stringify(error)}`
+				);
 			}
 		},
 	};
@@ -137,9 +190,16 @@ export function createBitbucketClient(
 	opts: BitbucketOptions,
 	ctx: RepoContext
 ): Client {
+	const bbClient = createClient(
+		createConfig({
+			baseUrl: 'https://api.bitbucket.org/2.0',
+			auth: opts.token,
+		})
+	);
+
 	return {
 		pullRequest(id: string) {
-			return createPullRequestClient(opts, ctx, parseInt(id));
+			return createPullRequestClient(bbClient, ctx, parseInt(id));
 		},
 
 		fromUrl(prUrl: string) {
@@ -148,7 +208,7 @@ export function createBitbucketClient(
 				throw new Error(`Invalid pull request URL: ${prUrl}`);
 			}
 			return createPullRequestClient(
-				opts,
+				bbClient,
 				{ owner: parsed.owner, repo: parsed.name },
 				parseInt(parsed.pr_number)
 			);

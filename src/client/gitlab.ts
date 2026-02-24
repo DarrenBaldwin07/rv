@@ -100,6 +100,14 @@ function createPullRequestClient(
 				}
 			}
 		},
+
+		async updateTitle(title: string) {
+			await gitlab.MergeRequests.edit(projectId, mrIid, { title });
+		},
+
+		async updateDescription(description: string) {
+			await gitlab.MergeRequests.edit(projectId, mrIid, { description });
+		},
 	};
 }
 

@@ -28,6 +28,8 @@ export interface PullRequestClient {
 	deleteComment(commentId: string): Promise<void>;
 	resolveComment(commentId: string): Promise<void>;
 	submitReview(review: Review): Promise<void>;
+    updateDescription(description: string): Promise<void>;
+    updateTitle(title: string): Promise<void>;
 }
 
 export interface RepoContext {

@@ -101,6 +101,24 @@ function createPullRequestClient(
 				}),
 			});
 		},
+
+		async updateTitle(title: string) {
+			await octokit.rest.pulls.update({
+				owner: ctx.owner,
+				repo: ctx.repo,
+				pull_number: prNumber,
+				title,
+			});
+		},
+
+		async updateDescription(description: string) {
+			await octokit.rest.pulls.update({
+				owner: ctx.owner,
+				repo: ctx.repo,
+				pull_number: prNumber,
+				body: description,
+			});
+		},
 	};
 }
 
