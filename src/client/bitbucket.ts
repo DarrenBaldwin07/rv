@@ -15,6 +15,7 @@ import type {
 	Comment,
 	PullRequestClient,
 	RepoContext,
+	ReviewThread,
 } from './index';
 import { parsePullRequestUrl } from '../utils';
 
@@ -182,6 +183,56 @@ function createPullRequestClient(
 					`Failed to update description: ${JSON.stringify(error)}`
 				);
 			}
+		},
+
+		async getReviewThreads() {
+			const { data, error } = await listPullRequestComments({
+				client: bbClient,
+				path,
+			});
+
+			if (error) {
+				throw new Error(
+					`Failed to get comments: ${JSON.stringify(error)}`
+				);
+			}
+
+			const allComments = (data?.values ?? []) as any[];
+			const rootComments = allComments.filter(
+				(c: any) => c.inline && !c.parent
+			);
+			const byParent = new Map<number, any[]>();
+			for (const c of allComments) {
+				if (!c.parent) continue;
+				const parentId = c.parent.id as number;
+				const replies = byParent.get(parentId) ?? [];
+				replies.push(c);
+				byParent.set(parentId, replies);
+			}
+
+			const threads: ReviewThread[] = [];
+
+			for (const root of rootComments) {
+				const replies = byParent.get(root.id) ?? [];
+				const all = [root, ...replies];
+
+				threads.push({
+					id: String(root.id),
+					path: root.inline?.path ?? '',
+					line: root.inline?.to ?? root.inline?.from ?? 0,
+					isResolved: Boolean(root.resolution),
+					comments: all.map(function (c: any) {
+						return {
+							author:
+								c.user?.display_name ?? 'unknown',
+							body: c.content?.raw ?? '',
+							createdAt: c.created_on ?? '',
+						};
+					}),
+				});
+			}
+
+			return threads;
 		},
 	};
 }

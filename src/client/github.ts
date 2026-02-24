@@ -4,8 +4,57 @@ import type {
 	Comment,
 	PullRequestClient,
 	RepoContext,
+	ReviewThread,
 } from './index';
 import { parsePullRequestUrl } from '../utils';
+
+const REVIEW_THREADS_QUERY = `
+query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $number) {
+      reviewThreads(first: 100, after: $cursor) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          id
+          isResolved
+          path
+          line
+          comments(first: 100) {
+            nodes {
+              body
+              author { login }
+              createdAt
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`;
+
+interface ThreadsGraphQLResponse {
+	repository: {
+		pullRequest: {
+			reviewThreads: {
+				pageInfo: { hasNextPage: boolean; endCursor: string | null };
+				nodes: Array<{
+					id: string;
+					isResolved: boolean;
+					path: string;
+					line: number;
+					comments: {
+						nodes: Array<{
+							body: string;
+							author: { login: string } | null;
+							createdAt: string;
+						}>;
+					};
+				}>;
+			};
+		};
+	};
+}
 
 function createPullRequestClient(
 	octokit: Octokit,
@@ -118,6 +167,47 @@ function createPullRequestClient(
 				pull_number: prNumber,
 				body: description,
 			});
+		},
+
+		async getReviewThreads() {
+			const threads: ReviewThread[] = [];
+			let cursor: string | null = null;
+
+			do {
+				const result: ThreadsGraphQLResponse = await octokit.graphql(
+					REVIEW_THREADS_QUERY,
+					{
+						owner: ctx.owner,
+						repo: ctx.repo,
+						number: prNumber,
+						cursor,
+					}
+				);
+
+				const page = result.repository.pullRequest.reviewThreads;
+
+				for (const node of page.nodes) {
+					threads.push({
+						id: node.id,
+						path: node.path,
+						line: node.line,
+						isResolved: node.isResolved,
+						comments: node.comments.nodes.map(function (c) {
+							return {
+								author: c.author?.login ?? 'unknown',
+								body: c.body,
+								createdAt: c.createdAt,
+							};
+						}),
+					});
+				}
+
+				cursor = page.pageInfo.hasNextPage
+					? page.pageInfo.endCursor
+					: null;
+			} while (cursor);
+
+			return threads;
 		},
 	};
 }

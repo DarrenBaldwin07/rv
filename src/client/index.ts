@@ -21,6 +21,20 @@ export interface ReviewComment {
 	body: string;
 }
 
+export interface ThreadComment {
+	author: string;
+	body: string;
+	createdAt: string;
+}
+
+export interface ReviewThread {
+	id: string;
+	path: string;
+	line: number;
+	isResolved: boolean;
+	comments: ThreadComment[];
+}
+
 export interface PullRequestClient {
 	getComments(): Promise<Comment[]>;
 	getComment(commentId: string): Promise<Comment>;
@@ -28,8 +42,9 @@ export interface PullRequestClient {
 	deleteComment(commentId: string): Promise<void>;
 	resolveComment(commentId: string): Promise<void>;
 	submitReview(review: Review): Promise<void>;
-    updateDescription(description: string): Promise<void>;
-    updateTitle(title: string): Promise<void>;
+	updateDescription(description: string): Promise<void>;
+	updateTitle(title: string): Promise<void>;
+	getReviewThreads(): Promise<ReviewThread[]>;
 }
 
 export interface RepoContext {

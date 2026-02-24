@@ -23,3 +23,7 @@ This project was created using `bun init` in bun v1.2.4. [Bun](https://bun.sh) i
 - ability to disable certain commands (e.g auto merge, etc)
 - ability to get failing github action logs, maybe filtered to near the error
 - ability to get lint errors from github actions
+
+## TODO
+- make a skill
+- claude code plugin?

@@ -4,6 +4,7 @@ import type {
 	Comment,
 	PullRequestClient,
 	RepoContext,
+	ReviewThread,
 } from './index';
 import { parsePullRequestUrl } from '../utils';
 
@@ -107,6 +108,48 @@ function createPullRequestClient(
 
 		async updateDescription(description: string) {
 			await gitlab.MergeRequests.edit(projectId, mrIid, { description });
+		},
+
+		async getReviewThreads() {
+			const discussions = await gitlab.MergeRequestDiscussions.all(
+				projectId,
+				mrIid
+			);
+
+			const threads: ReviewThread[] = [];
+
+			for (const d of discussions) {
+				const notes = d.notes as Record<string, any>[] | undefined;
+				if (d.individual_note || !notes?.length) continue;
+
+				const firstNote = notes[0];
+				if (firstNote.type !== 'DiffNote' || !firstNote.position)
+					continue;
+
+				const pos = firstNote.position;
+				const path = pos.new_path ?? pos.old_path ?? '';
+				const line = Number(pos.new_line ?? pos.old_line ?? 0);
+
+				const isResolved = notes.every(function (note) {
+					return !note.resolvable || Boolean(note.resolved);
+				});
+
+				threads.push({
+					id: d.id,
+					path,
+					line,
+					isResolved,
+					comments: notes.map(function (note) {
+						return {
+							author: note.author?.username ?? 'unknown',
+							body: note.body,
+							createdAt: String(note.created_at),
+						};
+					}),
+				});
+			}
+
+			return threads;
 		},
 	};
 }
