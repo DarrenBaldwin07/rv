@@ -6,7 +6,7 @@
       "name": "rv",
       "dependencies": {
         "@gitbeaker/rest": "^43.8.0",
-        "@tembo-io/bitbucket": "0.2.0",
+        "@tembo-io/bitbucket": "^0.2.3",
         "commander": "^14.0.2",
         "octokit": "^5.0.5",
         "zod": "^4.3.4",
@@ -93,7 +93,7 @@
 
     "@oxfmt/win32-x64": ["@oxfmt/win32-x64@0.27.0", "", { "os": "win32", "cpu": "x64" }, "sha512-cXKVkL1DuRq31QjwHqtBEUztyBmM9YZKdeFhsDLBURNdk1CFW42uWsmTsaqrXSoiCj7nCjfP0pwTOzxhQZra/A=="],
 
-    "@tembo-io/bitbucket": ["@tembo-io/bitbucket@0.2.0", "", {}, "sha512-YKbAe4w9Ef57pAW0DhhAWT1lbpS0ndY94Hntfddh/W1z8hHyuFf0HwKEiknyhxz9Zrd6lbK/khYDcNiLBJU65g=="],
+    "@tembo-io/bitbucket": ["@tembo-io/bitbucket@0.2.3", "", {}, "sha512-I9qjdsaz4fRc095/mVMRNVowO6tZeR6jpAqgG4pgZqRVc8qtUT5xM729Pq4fJl0DeeWpQAYtZfEoTWTi2wr/wA=="],
 
     "@types/aws-lambda": ["@types/aws-lambda@8.10.159", "", {}, "sha512-SAP22WSGNN12OQ8PlCzGzRCZ7QDCwI85dQZbmpz7+mAk+L7j+wI7qnvmdKh+o7A5LaOp6QnOZ2NJphAZQTTHQg=="],
 

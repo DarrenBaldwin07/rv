@@ -1,14 +1,7 @@
 import {
+	BitbucketClient,
 	createClient,
 	createConfig,
-	listPullRequestComments,
-	getPullRequestComment,
-	createPullRequestComment,
-	deletePullRequestComment,
-	resolvePullRequestComment,
-	approvePullRequest,
-	requestPullRequestChanges,
-	updatePullRequest,
 } from '@tembo-io/bitbucket';
 import type {
 	Client,
@@ -23,6 +16,17 @@ interface BitbucketOptions {
 	token: string;
 }
 
+function makeBitbucketClient(token: string): BitbucketClient {
+	return new BitbucketClient({
+		client: createClient(
+			createConfig({
+				baseUrl: 'https://api.bitbucket.org/2.0',
+				auth: token,
+			})
+		),
+	});
+}
+
 function mapComment(c: any): Comment {
 	return {
 		id: String(c.id),
@@ -35,7 +39,7 @@ function mapComment(c: any): Comment {
 }
 
 function createPullRequestClient(
-	bbClient: ReturnType<typeof createClient>,
+	bb: BitbucketClient,
 	ctx: RepoContext,
 	prId: number
 ): PullRequestClient {
@@ -47,8 +51,7 @@ function createPullRequestClient(
 
 	return {
 		async getComments() {
-			const { data, error } = await listPullRequestComments({
-				client: bbClient,
+			const { data, error } = await bb.listPullRequestComments({
 				path,
 			});
 
@@ -60,8 +63,7 @@ function createPullRequestClient(
 		},
 
 		async getComment(commentId: string) {
-			const { data, error } = await getPullRequestComment({
-				client: bbClient,
+			const { data, error } = await bb.getPullRequestComment({
 				path: { ...path, comment_id: parseInt(commentId) },
 			});
 
@@ -73,8 +75,7 @@ function createPullRequestClient(
 		},
 
 		async addComment(body: string) {
-			const { data, error } = await createPullRequestComment({
-				client: bbClient,
+			const { data, error } = await bb.createPullRequestComment({
 				path,
 				body: { content: { raw: body } } as any,
 			});
@@ -87,8 +88,7 @@ function createPullRequestClient(
 		},
 
 		async deleteComment(commentId: string) {
-			const { error } = await deletePullRequestComment({
-				client: bbClient,
+			const { error } = await bb.deletePullRequestComment({
 				path: { ...path, comment_id: parseInt(commentId) },
 			});
 
@@ -100,8 +100,7 @@ function createPullRequestClient(
 		},
 
 		async resolveComment(commentId: string) {
-			const { error } = await resolvePullRequestComment({
-				client: bbClient,
+			const { error } = await bb.resolvePullRequestComment({
 				path: { ...path, comment_id: parseInt(commentId) },
 			});
 
@@ -114,8 +113,7 @@ function createPullRequestClient(
 
 		async submitReview(review) {
 			if (review.action === 'approve') {
-				const { error } = await approvePullRequest({
-					client: bbClient,
+				const { error } = await bb.approvePullRequest({
 					path,
 				});
 				if (error) {
@@ -124,8 +122,7 @@ function createPullRequestClient(
 					);
 				}
 			} else if (review.action === 'request_changes') {
-				const { error } = await requestPullRequestChanges({
-					client: bbClient,
+				const { error } = await bb.requestPullRequestChanges({
 					path,
 				});
 				if (error) {
@@ -136,8 +133,7 @@ function createPullRequestClient(
 			}
 
 			if (review.body) {
-				await createPullRequestComment({
-					client: bbClient,
+				await bb.createPullRequestComment({
 					path,
 					body: { content: { raw: review.body } } as any,
 				});
@@ -145,8 +141,7 @@ function createPullRequestClient(
 
 			if (review.comments) {
 				for (const c of review.comments) {
-					await createPullRequestComment({
-						client: bbClient,
+					await bb.createPullRequestComment({
 						path,
 						body: {
 							content: { raw: c.body },
@@ -158,8 +153,7 @@ function createPullRequestClient(
 		},
 
 		async updateTitle(title: string) {
-			const { error } = await updatePullRequest({
-				client: bbClient,
+			const { error } = await bb.updatePullRequest({
 				path,
 				body: { title } as any,
 			});
@@ -172,8 +166,7 @@ function createPullRequestClient(
 		},
 
 		async updateDescription(description: string) {
-			const { error } = await updatePullRequest({
-				client: bbClient,
+			const { error } = await bb.updatePullRequest({
 				path,
 				body: { summary: { raw: description } } as any,
 			});
@@ -186,8 +179,7 @@ function createPullRequestClient(
 		},
 
 		async getReviewThreads() {
-			const { data, error } = await listPullRequestComments({
-				client: bbClient,
+			const { data, error } = await bb.listPullRequestComments({
 				path,
 			});
 
@@ -241,16 +233,11 @@ export function createBitbucketClient(
 	opts: BitbucketOptions,
 	ctx: RepoContext
 ): Client {
-	const bbClient = createClient(
-		createConfig({
-			baseUrl: 'https://api.bitbucket.org/2.0',
-			auth: opts.token,
-		})
-	);
+	const bb = makeBitbucketClient(opts.token);
 
 	return {
 		pullRequest(id: string) {
-			return createPullRequestClient(bbClient, ctx, parseInt(id));
+			return createPullRequestClient(bb, ctx, parseInt(id));
 		},
 
 		fromUrl(prUrl: string) {
@@ -259,7 +246,7 @@ export function createBitbucketClient(
 				throw new Error(`Invalid pull request URL: ${prUrl}`);
 			}
 			return createPullRequestClient(
-				bbClient,
+				bb,
 				{ owner: parsed.owner, repo: parsed.name },
 				parseInt(parsed.pr_number)
 			);

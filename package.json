@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@gitbeaker/rest": "^43.8.0",
-    "@tembo-io/bitbucket": "0.2.0",
+    "@tembo-io/bitbucket": "^0.2.3",
     "commander": "^14.0.2",
     "octokit": "^5.0.5",
     "zod": "^4.3.4"
