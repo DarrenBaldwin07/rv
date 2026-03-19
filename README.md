@@ -29,3 +29,5 @@ This project was created using `bun init` in bun v1.2.4. [Bun](https://bun.sh) i
 - make a skill
 - claude code plugin?
 - expose everything over mcp as well?
+- unified interface to reviewing via different review apis between github, gitlab, and bitbucket
+- much less token usage compared to github / gitlab MCPs
